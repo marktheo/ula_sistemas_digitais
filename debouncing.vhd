@@ -225,6 +225,7 @@ begin
 			
 		-- Operation 2 | Code 010 | Smaller
 		elsif (state_id = 3 AND inOp2 = '0' AND inOp1 = '1' AND inOp0 = '0') then
+			-- Verfies bits one by one to turn off LED0 and turn on zero flag if equal or grater
 			if (inA3 > inB3) then
 				outS0 <= '0';
 				zero <= '1';
@@ -240,6 +241,7 @@ begin
 			elsif ((inA3 = inB3) AND (inA2 = inB2) AND (inA1 = inB1) AND (inA0 = inB0)) then
 				outS0 <= '0';
 				zero <= '1';
+			-- Turn on LED0 if smaller (NOT equal and NOT greater)
 			else
 				outS0 <= '1';
 			end if;
@@ -248,148 +250,158 @@ begin
 			outS2 <= '0';
 			outS3 <= '0';
 			
-		-- Operação 3 : AND
+		-- Operation 3 | Code 011 | AND
 		elsif (state_id = 3 AND inOp2 = '0' AND inOp1 = '1' AND inOp0 = '1') then
+			-- Calculates A AND B 
 			outS0 <= inA0 AND inB0;
 			outS1 <= inA1 AND inB1;
 			outS2 <= inA2 AND inB2;
 			outS3 <= inA3 AND inB3;
-			
+
+			-- Turn on zero flag if all bits are zero
 			if (outS0 = '0' AND outS1 = '0' AND outS2 = '0' AND outS3 = '0') then
 				zero <= '1';
 			end if;
 			
-			if (outS3 = '1') then
-				ngtv <= '1';
-			end if;
-			
-		-- Operação 4 : OR
+		-- Operation 4 | Code 100 | OR
 		elsif (state_id = 3 AND inOp2 = '1' AND inOp1 = '0' AND inOp0 = '0') then
+			-- Calculates A OR B 
 			outS0 <= inA0 OR inB0;
 			outS1 <= inA1 OR inB1;
 			outS2 <= inA2 OR inB2;
 			outS3 <= inA3 OR inB3;
-			
+
+			-- Turn on zero flag if all bits are zero
 			if (outS0 = '0' AND outS1 = '0' AND outS2 = '0' AND outS3 = '0') then
 				zero <= '1';
 			end if;
 			
-			if (outS3 = '1') then
-				ngtv <= '1';
-			end if;
-			
-		-- Operação 5 : SOMA
+		-- Operation 5 | Code 101 | Addition
 		elsif (state_id = 3 AND inOp2 = '1' AND inOp1 = '0' AND inOp0 = '1') then
+			-- Sum A0 and B0 and calculate carry out 0
 			outS0 <= inA0 XOR inB0;
 			cout0 <= (inA0 and inB0);
-			
+			-- Sum A1, B1 and C0 and calculate carry out 1
 			outS1 <= ((inA1 XOR inB1) XOR (inA0 AND inB0));
 			cout1 <= (inA1 and inB1) OR ((inA1 XOR inB1) AND cout0);
-			
+			-- Sum A2, B2 and C1 and calculate carry out 2
 			outS2 <= ((inA2 XOR inB2) XOR ((inA1 AND inB1) OR ((inA1 XOR inB1) AND (inA0 AND inB0))));
 			cout2 <= (inA2 and inB2) OR ((inA2 XOR inB2) AND cout1);
-			
+			-- Sum A3, B3 and C2 and calculate carry out 3
 			outS3 <= ((inA3 XOR inB3) XOR ((inA2 AND inB2) OR ((inA2 XOR inB2) AND (inA1 AND inB1)) OR ((inA2 XOR inB2) AND (inA1 XOR inB1) AND (inA0 AND inB0))));
 			cout3 <= (inA3 and inB3) OR ((inA3 XOR inB3) AND cout2);
-			
+
+			-- Turn on zero flag if all bits are zero
 			if (outS0 = '0' AND outS1 = '0' AND outS2 = '0' AND outS3 = '0') then
 				zero <= '1';
 			end if;
-			
+
+			-- Calculates overflow based on carries
 			ovflw <= cout2 XOR cout3;
-			
+
+			-- Verifies if result number is negative
 			if (outS3 = '1' AND ovflw = '0') then
 				ngtv <= '1';
 			end if;
 		
-		-- Operação 6 : SUBTRAÇÃO
+		-- Operation 6 | Code 110 | Subtraction
 		elsif (state_id = 3 AND inOp2 = '1' AND inOp1 = '1' AND inOp0 = '0') then
+			-- Sum A0, ~B0 and 1 and calculate carry out 0
 			outS0 <= (inA0 XOR inNB0) XOR '1';
 			cout0 <= (inA0 and inNB0) OR ((inA0 XOR inNB0) AND '1');
-			
+			-- Sum A1, ~B1 and C0 and calculate carry out 1
 			outS1 <= (inA1 XOR inNB1) XOR cout0;
 			cout1 <= (inA1 and inNB1) OR ((inA1 XOR inNB1) AND cout0);
-			
+			-- Sum A2, ~B2 and C1 and calculate carry out 2
 			outS2 <= (inA2 XOR inNB2) XOR cout1;
 			cout2 <= (inA2 and inNB2) OR ((inA2 XOR inNB2) AND cout1);
-			
+			-- Sum A3, ~B3 and C2 and calculate carry out 3
 			outS3 <= (inA3 XOR inNB3) XOR cout2;
 			cout3 <= (inA3 and inNB3) OR ((inA3 XOR inNB3) AND cout2);
-			
+
+			-- Turn on zero flag if all bits are zero
 			if (outS0 = '0' AND outS1 = '0' AND outS2 = '0' AND outS3 = '0') then
 				zero <= '1';
 			end if;
-			
+
+			-- Calculates overflow based on carries
 			ovflw <= cout2 XOR cout3;
-			
+
+			-- Verifies if result number is negative
 			if (outS3 = '1' AND ovflw = '0') then
 				ngtv <= '1';
 			end if;
 			
-		-- Operação 7 : SHIFT
+		-- Operation 7 | Code 111 | Shift
 		elsif (state_id = 3 AND inOp2 = '1' AND inOp1 = '1' AND inOp0 = '1') then
-			-- 0000 : zero bits para esquerda
+			-- B = 0000 : A zero bits to the left
 			if (inB3 = '0' AND inB2 = '0' AND inB1 = '0' AND inB0 = '0') then
 				outS0 <= inA0; outS1 <= inA1; outS2 <= inA2; outS3 <= inA3;
 			
-			-- 0001 : um bit para a esquerda
+			-- B = 0001 : A one bit to the left
 			elsif (inB3 = '0' AND inB2 = '0' AND inB1 = '0' AND inB0 = '1') then
 				outS0 <= '0'; outS1 <= inA0; outS2 <= inA1; outS3 <= inA2;
 				if (inA3 = '1') then
 					ovflw <= '1';
 				end if;
 				
-			-- 0011 : dois bits para a esquerda
+			-- B = 0011 : A two bits to the left
 			elsif (inB3 = '0' AND inB2 = '0' AND inB1 = '1' AND inB0 = '1') then
 				outS0 <= '0'; outS1 <= '0'; outS2 <= inA0; outS3 <= inA1;
 				if (inA3 = '1' OR inA2 = '1') then
 					ovflw <= '1';
 				end if;
 			
-			-- 0111 : tres bits para a esquerda
+			-- B = 0111 : A three bits to the left
 			elsif (inB3 = '0' AND inB2 = '1' AND inB1 = '1' AND inB0 = '1') then
 				outS0 <= '0'; outS1 <= '0'; outS2 <= '0'; outS3 <= inA0;
 				if (inA3 = '1' OR inA2 = '1' OR inA3 = '1') then
 					ovflw <= '1';
 				end if;
 			
-			-- 1000 : zero bits para direita
+			-- B = 1000 : A zero bits to the right
 			elsif (inB3 = '1' AND inB2 = '0' AND inB1 = '0' AND inB0 = '0') then
 				outS0 <= inA0; outS1 <= inA1; outS2 <= inA2; outS3 <= inA3;
 			
-			-- 1001 : um bit para a direita
+			-- B = 1001 : A one bit to the right
 			elsif (inB3 = '1' AND inB2 = '0' AND inB1 = '0' AND inB0 = '1') then
 				outS0 <= inA1; outS1 <= inA2; outS2 <= inA3; outS3 <= '0';
 				
-			-- 1011 : dois bits para a direita
+			-- B = 1011 : A two bits to the right
 			elsif (inB3 = '1' AND inB2 = '0' AND inB1 = '1' AND inB0 = '1') then
 				outS0 <= inA2; outS1 <= inA3; outS2 <= '0'; outS3 <= '0';
 			
-			-- 1111 : tres bits para a direita
+			-- B = 1111 : A three bits to the right
 			elsif (inB3 = '1' AND inB2 = '1' AND inB1 = '1' AND inB0 = '1') then
 				outS0 <= inA3; outS1 <= '0'; outS2 <= '0'; outS3 <= '0';
-				
+
+			-- Turn all LEDs off if B code is unknown
 			else
 				outS0 <= '0'; outS1 <= '0'; outS2 <= '0'; outS3 <= '0';
 			end if;
-			
+				
+			-- Turn on zero flag if all bits are zero
 			if (outS0 = '0' AND outS1 = '0' AND outS2 = '0' AND outS3 = '0') then
 				zero <= '1';
 			end if;
-			
+
+			-- Verifies if result number is negative
 			if (outS3 = '1') then
 				ngtv <= '1';
 			end if;
 		else
+			-- Turn all LEDs off if operation code is unknown
 			outS0 <= '0'; outS1 <= '0'; outS2 <= '0'; outS3 <= '0';
 		end if;
 	end process;
-	
+
+	-- The four LEDs in the right show the button state on 3 first states and then show the result
 	A0_out <= A0 when (state_id < 3) else outS0;
 	A1_out <= A1 when (state_id < 3) else outS1;
 	A2_out <= A2 when (state_id < 3) else outS2;
 	A3_out <= A3 when (state_id < 3) else outS3;
-	
+
+	-- The four LEDs in the right show the system state and button signal on 3 first states and then show the flags
 	S0_out <= state(0) when (state_id < 3) else zero;
 	S1_out <= state(1) when (state_id < 3) else ngtv;
 	S2_out <= state(2) when (state_id < 3) else cout3;
